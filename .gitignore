@@ -1,0 +1,10 @@
+tjjm/
+data/
+save/
+model_output/
+report/
+GradCAM_output/
+t-SNE_output/
+unet_model_output/
+
+__pycache__
