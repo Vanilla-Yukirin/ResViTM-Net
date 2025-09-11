@@ -1,7 +1,7 @@
 '''
 本代码将测试INV_CNN（CNN反演）模型。输入是1024*1024的图片，输出是0或1，0表示正常，1表示异常。
 使用read_date_new.py中的read_data_new函数读取数据集，并使用INV_CNN模型进行训练。
-模型保存在model_output文件夹下
+模型保存在INV_CNN_output文件夹下
 文件名形如
 INV_CNN-20250409010540-{epoch}-{loss:.4f}.pth
 
@@ -173,7 +173,7 @@ class INV_CNN(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-def save_model(model, loss, timestamp, epoch, model_path='model_output', end=""):
+def save_model(model, loss, timestamp, epoch, model_path='INV_CNN_output', end=""):
     """保存模型"""
     os.makedirs(model_path, exist_ok=True)
     loss_str = f"{loss:.4f}"
@@ -208,16 +208,16 @@ def plot_history(train_losses, val_losses, train_accs, val_accs):
     plt.title('Accuracy Curves')
     
     plt.tight_layout()
-    os.makedirs('model_output', exist_ok=True)
-    plt.savefig('model_output/INV_CNN-training_history.png')
+    os.makedirs('INV_CNN_output', exist_ok=True)
+    plt.savefig('INV_CNN_output/INV_CNN-training_history.png')
     # plt.show()
 
 
 def save_model_multitask(model, val_loss, timestamp, epoch, end=""):
     """保存多任务模型"""
-    if not os.path.exists("model_output"):
-        os.makedirs("model_output")
-    model_path = os.path.join("models", f"INV_CNN-{timestamp}-{epoch}-{val_loss:.4f}{end}.pth")
+    if not os.path.exists("INV_CNN_output"):
+        os.makedirs("INV_CNN_output")
+    model_path = os.path.join("INV_CNN_output", f"INV_CNN-{timestamp}-{epoch}-{val_loss:.4f}{end}.pth")
     torch.save(model.state_dict(), model_path)
     return model_path
 
@@ -264,7 +264,8 @@ def plot_history_multitask(train_losses, val_losses, train_accs, val_accs):
     axes[1, 1].grid(True)
     
     plt.tight_layout()
-    plt.savefig(f"INV_CNN_history_{datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+    os.makedirs('INV_CNN_output', exist_ok=True)
+    plt.savefig(f"INV_CNN_output/INV_CNN_history_{datetime.now().strftime('%Y%m%d%H%M%S')}.png")
     plt.close()
 
 
@@ -591,7 +592,7 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
 
 def select_model():
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = 'INV_CNN_output'
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         return None

@@ -7,7 +7,9 @@ import numpy as np
 from datetime import datetime
 from PIL import Image
 import copy
-# 导入数据读取函数
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(current_dir, '..'))
 from utils.read_data import read_data
 from utils.read_mask import read_mask
 
@@ -207,7 +209,7 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
 
 
 
-    print("增强后的数据集已保存在unet_aueg_debug文件夹下")
+    print("增强后的数据集已保存在unet_aug_debug文件夹下")
 
     # 使用增强后的训练数据
     train_data = augmented_train_data
@@ -395,7 +397,7 @@ def main():
 
     print("数据集处理完毕")
     print("得到了",len(data_list),"对数据")
-    # 展示第一个 保存你在本地
+    # 展示第一个 保存在本地
     print("展示第一个")
     
     if data_list:

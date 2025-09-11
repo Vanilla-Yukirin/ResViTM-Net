@@ -15,7 +15,7 @@
         具体的，如果图像为$h\times w(h<w)$，则拉伸比例为$\frac{1024}{w}$，原本长度为$h$的边将被拉伸至$h\times\frac{1024}{w}$
         并在两侧分别填充$\frac{1024-h\times\frac{1024}{w}}{2}$的空白区域（使用全0填充）。
     并且用类似于原本的数据集分类，保存在本地。
-    预计保存在：data_new下面的data1，data2，data3：
+    预计保存在：data_new_{timestamp}下面的data1，data2，data3：
     其中每个文件夹下包含着：
         若干图片
         txt文本
@@ -34,6 +34,7 @@ import torch.nn.functional as F
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+from datetime import datetime
 import time
 import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -195,7 +196,9 @@ def crop_and_resize_with_padding(img, target_size=TARGET_SIZE):
 
 def create_dataset_structure():
     """创建新数据集的目录结构"""
-    base_dir = 'data_new'
+    # base_dir = 'data_new'
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    base_dir = os.path.join("save",f"data_new-{timestamp}")
     dirs = ['data1', 'data2', 'data3']
     
     for dir_name in dirs:

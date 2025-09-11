@@ -5,6 +5,15 @@ model_output/
 report/
 GradCAM_output/
 t-SNE_output/
+
+
+INV_CNN_aug_debug/
+INV_CNN_output
+unet_aug_debug/
 unet_model_output/
+temp/
+temp_debug/
+
+data_new/
 
 __pycache__

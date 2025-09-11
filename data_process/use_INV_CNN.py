@@ -1,5 +1,5 @@
 '''
-查询model_output下面的INV_CNN.pth文件，并返回一个包含所有文件的列表，排序
+查询INV_CNN_output下面的INV_CNN.pth文件，并返回一个包含所有文件的列表，排序
 询问要用哪个
 模型构建文件来自 train_INV_CNN.py
 read_data.read_data(order="0001")，在数据集3上应用这个模型
