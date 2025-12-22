@@ -423,6 +423,9 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     train_accs = {'gender': [], 'age': []}
     val_accs = {'gender': [], 'age': []}
 
+    # 记录每个epoch的详细指标（用于CSV输出）
+    epoch_metrics = []
+
     # 记录最佳模型
     best_val_loss = float('inf')
     best_model = None
@@ -635,6 +638,39 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         report+=f'Val Loss: {avg_val_loss:.4f} (G:{avg_val_gender_loss:.4f}, A:{avg_val_age_loss:.4f}), '
         report+=f'Val Acc: (G:{val_gender_accuracy:.4f}, A:{val_age_accuracy:.4f})\n'
 
+        # 记录当前epoch的所有数字指标
+        current_metrics = {
+            'epoch': epoch+1,
+            'train_loss_total': avg_train_loss,
+            'train_loss_gender': avg_train_gender_loss,
+            'train_loss_age': avg_train_age_loss,
+            'train_acc_gender': train_gender_accuracy,
+            'train_acc_age': train_age_accuracy,
+            'val_loss_total': avg_val_loss,
+            'val_loss_gender': avg_val_gender_loss,
+            'val_loss_age': avg_val_age_loss,
+            'val_acc_gender': val_gender_accuracy,
+            'val_acc_age': val_age_accuracy,
+            'gender_tp': gender_tp,
+            'gender_fp': gender_fp,
+            'gender_tn': gender_tn,
+            'gender_fn': gender_fn,
+            'gender_precision': gender_precision,
+            'gender_recall': gender_recall,
+            'gender_specificity': gender_specificity,
+            'gender_f1': gender_f1,
+            'age0_tp': age_metrics[0]['tp'],
+            'age0_fp': age_metrics[0]['fp'],
+            'age0_precision': age_metrics[0]['precision'],
+            'age1_tp': age_metrics[1]['tp'],
+            'age1_fp': age_metrics[1]['fp'],
+            'age1_precision': age_metrics[1]['precision'],
+            'age2_tp': age_metrics[2]['tp'],
+            'age2_fp': age_metrics[2]['fp'],
+            'age2_precision': age_metrics[2]['precision']
+        }
+        epoch_metrics.append(current_metrics)
+
         # 保存当前模型
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         save_model(model, avg_val_loss, timestamp, epoch+1)
@@ -669,6 +705,23 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     report_path = os.path.join('report/INV_CNN', f'INV_CNN_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
+
+        # 追加CSV格式的数字指标
+        f.write("\n\n")
+        f.write("="*80 + "\n")
+        f.write("详细数字指标\n")
+        f.write("="*80 + "\n\n")
+
+        # 写入CSV表头
+        if epoch_metrics:
+            headers = list(epoch_metrics[0].keys())
+            f.write(",".join(headers) + "\n")
+
+            # 写入每行数据
+            for metrics in epoch_metrics:
+                values = [str(metrics[key]) for key in headers]
+                f.write(",".join(values) + "\n")
+
     print(f"训练报告已保存至: {report_path}")
 
     return best_model, best_val_loss

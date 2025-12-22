@@ -162,6 +162,7 @@ def adjust_brightness(img):
 
 
 def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
+    report=""
     # 划分训练集和验证集
     train_size = int(0.8 * len(data_list))
     train_data = data_list[:train_size]
@@ -239,7 +240,13 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
 
     criterion = DiceLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    
+
+    print(f"使用 DiceLoss")
+    report+=f"使用 DiceLoss\n"
+
+    # 记录每个epoch的详细指标（用于CSV输出）
+    epoch_metrics = []
+
     # 记录最佳模型
     best_val_loss = float('inf')
     best_epoch_id=0
@@ -307,6 +314,19 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
               f'Train Loss: {avg_train_loss:.4f}, '
               f'Val Loss: {avg_val_loss:.4f},'
               f'Val Accuracy: {accuracy:.4f}%')
+        report+=f'Epoch [{epoch+1}/{num_epochs}], '
+        report+=f'Train Loss: {avg_train_loss:.4f}, '
+        report+=f'Val Loss: {avg_val_loss:.4f}, '
+        report+=f'Val Accuracy: {accuracy:.4f}%\n'
+
+        # 记录当前epoch的数字指标
+        current_metrics = {
+            'epoch': epoch+1,
+            'train_loss': avg_train_loss,
+            'val_loss': avg_val_loss,
+            'val_accuracy': accuracy
+        }
+        epoch_metrics.append(current_metrics)
         
         
         # 保存最佳模型
@@ -322,8 +342,37 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
         # 早停
         if patience_counter >= patience:
             print(f'早停: {patience} 个epoch没有改善')
+            report += f'早停: {patience} 个epoch没有改善\n'
             break
     print("最佳模型epoch=",best_epoch_id,"val loss=",best_val_loss)
+    report += f"最佳模型epoch={best_epoch_id}, val loss={best_val_loss}\n"
+
+    # 保存报告
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    os.makedirs('report/UNet', exist_ok=True)
+    report_path = os.path.join('report/UNet', f'UNet_report-{timestamp}.txt')
+    with open(report_path, 'w') as f:
+        f.write(report)
+
+        # 追加CSV格式的数字指标
+        f.write("\n\n")
+        f.write("="*80 + "\n")
+        f.write("详细数字指标\n")
+        f.write("="*80 + "\n\n")
+
+        # 写入CSV表头
+        if epoch_metrics:
+            headers = list(epoch_metrics[0].keys())
+            f.write(",".join(headers) + "\n")
+
+            # 写入每行数据
+            for metrics in epoch_metrics:
+                values = [str(metrics[key]) for key in headers]
+                f.write(",".join(values) + "\n")
+
+    print(f"训练报告已保存至: {report_path}")
+
     return best_model, best_val_loss
 
 
