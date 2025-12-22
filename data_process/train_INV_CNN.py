@@ -349,7 +349,7 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         # 原始数据
         augmented_train_data.append(data)
         # 增强数据
-        aug_num=1
+        aug_num=3
         for _ in range(aug_num):  # 每个样本生成若干个增强版本
             img_aug = apply_augmentation(data["img"])
             aug_data = {
@@ -409,9 +409,21 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     print(f"使用设备: {device}")
 
     # 定义损失函数和优化器
-    print(f"使用 CrossEntropyLoss")
-    report+=f"使用 CrossEntropyLoss\n"
-    criterion = nn.CrossEntropyLoss()
+    # 性别类别权重：女(287) vs 男(512) -> 权重比例为 512/287 : 1
+    gender_class_weights = torch.tensor([512.0/287.0, 1.0]).to(device)
+    # 年龄类别权重：0-18(52) vs 18-30(274) vs >30(473) -> 归一化到最大值为1
+    age_class_weights = torch.tensor([473.0/52.0, 473.0/274.0, 1.0]).to(device)
+
+    criterion_gender = nn.CrossEntropyLoss(weight=gender_class_weights)
+    criterion_age = nn.CrossEntropyLoss(weight=age_class_weights)
+
+    print(f"使用加权 CrossEntropyLoss")
+    print(f"性别类别权重: 女={gender_class_weights[0]:.2f}, 男={gender_class_weights[1]:.2f}")
+    print(f"年龄类别权重: 0-18={age_class_weights[0]:.2f}, 18-30={age_class_weights[1]:.2f}, >30={age_class_weights[2]:.2f}")
+    report+=f"使用加权 CrossEntropyLoss\n"
+    report+=f"性别类别权重: 女={gender_class_weights[0]:.2f}, 男={gender_class_weights[1]:.2f}\n"
+    report+=f"年龄类别权重: 0-18={age_class_weights[0]:.2f}, 18-30={age_class_weights[1]:.2f}, >30={age_class_weights[2]:.2f}\n"
+
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     
     # 学习率调度器
@@ -461,10 +473,12 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
             gender_outputs, age_outputs = model(X_batch)
             
             # 计算损失
-            gender_loss = criterion(gender_outputs, gender_batch)
-            age_loss = criterion(age_outputs, age_batch)
+            gender_loss = criterion_gender(gender_outputs, gender_batch)
+            age_loss = criterion_age(age_outputs, age_batch)
             # 总损失 = 性别损失 + 年龄损失（可以调整权重）
-            loss = gender_loss + age_loss
+            gender_weight = 2.0
+            age_weight = 2.0  # 可以调整各自的权重
+            loss = gender_weight * gender_loss + age_weight * age_loss
             
             # 反向传播
             loss.backward()
@@ -527,9 +541,9 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
                 gender_outputs, age_outputs = model(X_batch)
                 
                 # 计算损失
-                gender_loss = criterion(gender_outputs, gender_batch)
-                age_loss = criterion(age_outputs, age_batch)
-                loss = gender_loss + age_loss
+                gender_loss = criterion_gender(gender_outputs, gender_batch)
+                age_loss = criterion_age(age_outputs, age_batch)
+                loss = gender_weight * gender_loss + age_weight * age_loss
                 
                 # 统计
                 val_loss += loss.item() * len(batch_data)
@@ -774,7 +788,7 @@ def main():
         data_lists=data_lists,
         num_epochs=50,
         batch_size=16,  # 增加批次大小，因为CNN模型比CNN-ViT小
-        learning_rate=1e-3,  # 稍微增加学习率
+        learning_rate=1e-4,  # 稍微增加学习率
         resume_training=resume_training,
         model_path=model_path
     )
