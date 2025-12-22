@@ -414,6 +414,12 @@ def read_data2(cxr_png_path,clinical_readings_path):
 
 
 def read_data3(Normal_path,Tuberculosis_path):
+    '''
+    read_data3
+    
+    对于Normal，不读取1~406
+    对于Tuberculosis，不读取307~700
+    '''
     Normal_files = os.listdir(Normal_path)
     data_list3 = []
     for file_name in Normal_files:
@@ -430,6 +436,10 @@ def read_data3(Normal_path,Tuberculosis_path):
             positive=0
         except ValueError:
             print(f"文件名解析失败: {file_name}")
+            continue
+
+        # 排除1~406
+        if int(idx)>=1 and int(idx)<=406:
             continue
         
         # print("读取图像文件并转换为 NumPy 数组")
@@ -484,6 +494,10 @@ def read_data3(Normal_path,Tuberculosis_path):
             positive=1
         except ValueError:
             print(f"文件名解析失败: {file_name}")
+            continue
+
+        # 排除307~700
+        if int(idx)>=307 and int(idx)<=700:
             continue
         
         # print("读取图像文件并转换为 NumPy 数组")
