@@ -8,6 +8,7 @@ from datetime import datetime
 from PIL import Image
 import copy
 import sys
+from tqdm import tqdm
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, '..'))
 from utils.read_data import read_data
@@ -259,9 +260,12 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
         # 训练阶段
         model.train()
         train_loss = 0
-        
+
+        # 使用tqdm显示训练进度
+        train_pbar = tqdm(range(0, len(train_data), batch_size), desc=f'Epoch {epoch+1}/{num_epochs} [Train]')
+
         # 处理训练数据
-        for i in range(0, len(train_data), batch_size):
+        for i in train_pbar:
             batch_data = train_data[i:i + batch_size]
             
             # 准备批次数据
@@ -276,9 +280,12 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
             # 反向传播
             loss.backward()
             optimizer.step()
-            
+
             train_loss += loss.item()
-            
+
+            # 更新进度条
+            train_pbar.set_postfix({'loss': f'{loss.item():.4f}'})
+
         avg_train_loss = train_loss / (len(train_data) // batch_size)
         
         # 验证阶段
@@ -287,8 +294,11 @@ def train_model(data_list, num_epochs=50, batch_size=1, learning_rate=0.0001):
         correct = 0
         total = 0
 
+        # 使用tqdm显示验证进度
+        val_pbar = tqdm(range(0, len(val_data), batch_size), desc=f'Epoch {epoch+1}/{num_epochs} [Val]')
+
         with torch.no_grad():
-            for i in range(0, len(val_data), batch_size):
+            for i in val_pbar:
                 batch_data = val_data[i:i + batch_size]
                 
                 # 准备批次数据
