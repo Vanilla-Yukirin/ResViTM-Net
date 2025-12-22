@@ -647,7 +647,10 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     
     
     # 保存报告
-    report_path = os.path.join('report', f'ResViTM_report-{timestamp}.txt')
+    report_dir = 'report'
+    if not os.path.exists(report_dir):
+        os.makedirs(report_dir)
+    report_path = os.path.join(report_dir, f'ResViTM_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
     return best_model, best_val_loss
