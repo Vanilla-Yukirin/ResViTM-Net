@@ -497,7 +497,7 @@ def read_data3(Normal_path,Tuberculosis_path):
             continue
 
         # 排除307~700
-        if int(idx)>=307 and int(idx)<=700:
+        if int(idx)>=307*10000 and int(idx)<=700*10000:
             continue
         
         # print("读取图像文件并转换为 NumPy 数组")
