@@ -294,12 +294,13 @@ def pad_to_square(image, target_size=1024):
 
 
 def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_training, model_path):
+    report=""
     """训练INV_CNN模型"""
     # 合并数据列表
     all_data = []
     for data_list in data_lists:
         all_data.extend(data_list)
-    
+
     print(f"合并后的数据总量: {len(all_data)}")
     
     # 缩放尺寸，放在1024*1024的画布内部
@@ -406,8 +407,10 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     model.to(device)
 
     print(f"使用设备: {device}")
-    
+
     # 定义损失函数和优化器
+    print(f"使用 CrossEntropyLoss")
+    report+=f"使用 CrossEntropyLoss\n"
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
     
@@ -498,7 +501,13 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         val_gender_correct = 0
         val_age_correct = 0
         val_total = 0
-        
+
+        # 初始化混淆矩阵统计 - 性别和年龄
+        gender_confusion = {'tp': 0, 'fp': 0, 'tn': 0, 'fn': 0}
+        age_confusion = {}
+        for age_label in [0, 1, 2]:
+            age_confusion[age_label] = {'tp': 0, 'fp': 0}
+
         # 使用tqdm显示进度
         val_pbar = tqdm(range(0, len(val_data), batch_size), desc=f'Epoch {epoch+1}/{total_epochs} [Val]')
         
@@ -530,6 +539,31 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
                 val_total += gender_batch.size(0)
                 val_gender_correct += (gender_predicted == gender_batch).sum().item()
                 val_age_correct += (age_predicted == age_batch).sum().item()
+
+                # 计算性别混淆矩阵
+                for pred, true in zip(gender_predicted.cpu(), gender_batch.cpu()):
+                    pred_label = int(pred.item())
+                    true_label = int(true.item())
+                    if true_label == 1:
+                        if pred_label == 1:
+                            gender_confusion['tp'] += 1
+                        else:
+                            gender_confusion['fn'] += 1
+                    else:
+                        if pred_label == 1:
+                            gender_confusion['fp'] += 1
+                        else:
+                            gender_confusion['tn'] += 1
+
+                # 计算年龄混淆矩阵（每个类别的TP和FP）
+                for pred, true in zip(age_predicted.cpu(), age_batch.cpu()):
+                    pred_label = int(pred.item())
+                    true_label = int(true.item())
+                    for age_label in [0, 1, 2]:
+                        if true_label == age_label and pred_label == age_label:
+                            age_confusion[age_label]['tp'] += 1
+                        elif true_label != age_label and pred_label == age_label:
+                            age_confusion[age_label]['fp'] += 1
         
         # 计算平均损失和准确率
         avg_val_loss = val_loss / len(val_data)
@@ -552,12 +586,54 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         train_accs['age'].append(train_age_accuracy)
         val_accs['gender'].append(val_gender_accuracy)
         val_accs['age'].append(val_age_accuracy)
-        
+
+        # 计算性别评估指标
+        gender_tp = gender_confusion['tp']
+        gender_fp = gender_confusion['fp']
+        gender_tn = gender_confusion['tn']
+        gender_fn = gender_confusion['fn']
+        gender_precision = gender_tp / (gender_tp + gender_fp) if (gender_tp + gender_fp) > 0 else 0
+        gender_recall = gender_tp / (gender_tp + gender_fn) if (gender_tp + gender_fn) > 0 else 0
+        gender_specificity = gender_tn / (gender_tn + gender_fp) if (gender_tn + gender_fp) > 0 else 0
+        gender_f1 = 2 * (gender_precision * gender_recall) / (gender_precision + gender_recall) if (gender_precision + gender_recall) > 0 else 0
+
+        # 计算年龄评估指标（每个类别）
+        age_metrics = {}
+        for age_label in [0, 1, 2]:
+            tp = age_confusion[age_label]['tp']
+            fp = age_confusion[age_label]['fp']
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+            age_metrics[age_label] = {'precision': precision, 'tp': tp, 'fp': fp}
+
+        # 打印详细的评估结果
+        print("\nValidation Results:")
+        print(f"Average Loss: {avg_val_loss:.4f}")
+        print(f"Gender Accuracy: {val_gender_accuracy:.4f}, Age Accuracy: {val_age_accuracy:.4f}")
+        print("\nGender Confusion Matrix:")
+        print(f"TP={gender_tp},FP={gender_fp},TN={gender_tn},FN={gender_fn}")
+        print("\nGender Detailed Metrics:")
+        print(f"Prec={gender_precision:.4f},Rec={gender_recall:.4f},Spec={gender_specificity:.4f},F1={gender_f1:.4f}")
+        print("\nAge Classification Metrics:")
+        for age_label in [0, 1, 2]:
+            print(f"Age Group {age_label}: TP={age_metrics[age_label]['tp']}, FP={age_metrics[age_label]['fp']}, Precision={age_metrics[age_label]['precision']:.4f}")
+
+        report += f"\nValidation Results:\nAverage Loss: {avg_val_loss:.4f}\nGender Accuracy: {val_gender_accuracy:.4f}, Age Accuracy: {val_age_accuracy:.4f}\n"
+        report += f"Gender Confusion Matrix:\nTP={gender_tp},FP={gender_fp},TN={gender_tn},FN={gender_fn}\n"
+        report += f"Gender Detailed Metrics:\nPrec={gender_precision:.4f},Rec={gender_recall:.4f},Spec={gender_specificity:.4f},F1={gender_f1:.4f}\n"
+        report += f"Age Classification Metrics:\n"
+        for age_label in [0, 1, 2]:
+            report += f"Age Group {age_label}: TP={age_metrics[age_label]['tp']}, FP={age_metrics[age_label]['fp']}, Precision={age_metrics[age_label]['precision']:.4f}\n"
+
         print(f'Epoch [{epoch+1}/{total_epochs}], '
               f'Train Loss: {avg_train_loss:.4f} (G:{avg_train_gender_loss:.4f}, A:{avg_train_age_loss:.4f}), '
               f'Train Acc: (G:{train_gender_accuracy:.4f}, A:{train_age_accuracy:.4f}), '
               f'Val Loss: {avg_val_loss:.4f} (G:{avg_val_gender_loss:.4f}, A:{avg_val_age_loss:.4f}), '
               f'Val Acc: (G:{val_gender_accuracy:.4f}, A:{val_age_accuracy:.4f})')
+        report+=f'Epoch [{epoch+1}/{total_epochs}], '
+        report+=f'Train Loss: {avg_train_loss:.4f} (G:{avg_train_gender_loss:.4f}, A:{avg_train_age_loss:.4f}), '
+        report+=f'Train Acc: (G:{train_gender_accuracy:.4f}, A:{train_age_accuracy:.4f}), '
+        report+=f'Val Loss: {avg_val_loss:.4f} (G:{avg_val_gender_loss:.4f}, A:{avg_val_age_loss:.4f}), '
+        report+=f'Val Acc: (G:{val_gender_accuracy:.4f}, A:{val_age_accuracy:.4f})\n'
 
         # 保存当前模型
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -575,6 +651,7 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         # 早停
         if patience_counter >= patience:
             print(f'早停: {patience} 个epoch没有改善')
+            report += f'早停: {patience} 个epoch没有改善\n'
             break
     
     # 绘制训练历史
@@ -585,7 +662,15 @@ def train_INV_CNN(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         best_model_path = save_model_multitask(best_model, best_val_loss, timestamp, best_epoch_id, end="-best")
         print(f"最佳模型已保存: {best_model_path}, Val Loss: {best_val_loss:.4f}")
-    
+        report += f"最佳模型已保存: {best_model_path}, Val Loss: {best_val_loss:.4f}\n"
+
+    # 保存报告
+    os.makedirs('report/INV_CNN', exist_ok=True)
+    report_path = os.path.join('report/INV_CNN', f'INV_CNN_report-{timestamp}.txt')
+    with open(report_path, 'w') as f:
+        f.write(report)
+    print(f"训练报告已保存至: {report_path}")
+
     return best_model, best_val_loss
 
 
