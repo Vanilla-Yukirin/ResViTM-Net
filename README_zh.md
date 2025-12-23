@@ -90,6 +90,16 @@ python ResViTM-Net/train_ResViTM.py
 python ResViTM-Net/Adjust_Loss/BCELoss.py
 ```
 
+### 调整SmoothL1Loss的Beta参数
+
+调整 ResViTM 所使用的SmoothL1Loss 函数的超参数 beta，使用 MoreBeta 脚本：
+
+```bash
+python ResViTM-Net/MoreBeta/MoreBeta.py -b 0.5
+```
+
+beta 参数的范围为 [0.0, 1.0]，且必须保留一位小数（例如 0.0、0.5、1.0）。
+
 ### 消融实验与GradCAM
 
 消融实验与GradCAM热力图可视化相关代码存放在 `ResViTM-Net/Ablation` 目录下。例如：

@@ -92,6 +92,16 @@ Training scripts for ResViTM models using different loss functions are located i
 python ResViTM-Net/Adjust_Loss/BCELoss.py
 ```
 
+### Adjusting SmoothL1Loss Beta Parameter
+
+To adjust the beta hyperparameter of the SmoothL1Loss function used in ResViTM, use the MoreBeta script:
+
+```bash
+python ResViTM-Net/MoreBeta/MoreBeta.py -b 0.5
+```
+
+The beta parameter must be in the range [0.0, 1.0] and should be specified to one decimal place (e.g., 0.0, 0.5, 1.0).
+
 ### Ablation Studies and GradCAM
 
 Code related to ablation studies and GradCAM heatmap visualization is located in the `ResViTM-Net/Ablation` directory. For example:
