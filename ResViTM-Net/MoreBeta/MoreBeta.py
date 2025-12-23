@@ -659,9 +659,9 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     return best_model, best_val_loss
 
 
-def select_model():
+def select_model(beta_str):
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = os.path.join('model_output', 'MoreBeta', beta_str)
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         return None
@@ -720,7 +720,7 @@ def main():
     
     resume_training = True
     # 选择并加载模型
-    model_path = select_model()
+    model_path = select_model(beta_str)
     if not model_path:
         resume_training = False
     print("开始训练ResViTM模型")

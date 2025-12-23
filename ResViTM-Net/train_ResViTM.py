@@ -660,7 +660,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
 
 def select_model():
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = os.path.join('model_output', 'ResViTM')
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         return None
