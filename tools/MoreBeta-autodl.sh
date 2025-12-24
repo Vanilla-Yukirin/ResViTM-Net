@@ -11,21 +11,42 @@ do
     if [ $? -eq 0 ]; then
         echo "beta = $beta 训练完成"
         
-        # 将model_output同步到autodl持久化目录
-        echo "正在同步模型文件到 /root/autodl-tmp ..."
-        if command -v rsync &> /dev/null; then
-            # 使用rsync支持增量同步和合并
-            rsync -av --progress ./model_output/ /root/autodl-tmp/model_output/
-        else
-            # 如果没有rsync，使用cp
-            mkdir -p /root/autodl-tmp/model_output
-            cp -r ./model_output/* /root/autodl-tmp/model_output/
+        # 将model_output移动到autodl持久化目录
+        echo "正在移动模型文件到 /root/autodl-tmp ..."
+        mkdir -p /root/autodl-tmp/model_output
+        if [ $? -ne 0 ]; then
+            echo "错误: 无法创建目标目录 /root/autodl-tmp/model_output"
+            exit 1
         fi
         
-        if [ $? -eq 0 ]; then
-            echo "模型文件同步成功"
+        move_success=0
+        if command -v rsync &> /dev/null; then
+            # 使用rsync支持增量同步，--remove-source-files会在同步后删除源文件
+            rsync -av --progress --remove-source-files ./model_output/ /root/autodl-tmp/model_output/
+            if [ $? -eq 0 ]; then
+                move_success=1
+            fi
         else
-            echo "警告: 模型文件同步失败，但继续训练下一个beta值"
+            # 如果没有rsync，先尝试mv，失败后降级到cp+rm
+            mv ./model_output/* /root/autodl-tmp/model_output/ 2>/dev/null
+            if [ $? -eq 0 ]; then
+                move_success=1
+            else
+                # mv失败，使用cp+rm方案
+                cp -r ./model_output/* /root/autodl-tmp/model_output/ 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    rm -rf ./model_output/*
+                    if [ $? -eq 0 ]; then
+                        move_success=1
+                    fi
+                fi
+            fi
+        fi
+        
+        if [ $move_success -eq 1 ]; then
+            echo "模型文件移动成功"
+        else
+            echo "警告: 模型文件移动失败，但继续训练下一个beta值"
         fi
     else
         echo "beta = $beta 训练失败，退出"
@@ -35,4 +56,4 @@ do
 done
 
 echo "所有beta值训练完成！"
-echo "所有模型已同步到 /root/autodl-tmp/model_output/"
+echo "所有模型已移动到 /root/autodl-tmp/model_output/"
