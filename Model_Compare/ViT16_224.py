@@ -60,10 +60,11 @@ class ViT16_224(nn.Module):
 
 def save_model(model, loss, timestamp, epoch, model_path='model_output', end=""):
     """保存模型"""
-    os.makedirs(model_path, exist_ok=True)
+    model_dir = os.path.join(model_path, 'Model_Compare', 'ViT16_224')
+    os.makedirs(model_dir, exist_ok=True)
     loss_str = f"{loss:.4f}"
     model_name = f'ViT16_224-{timestamp}-{epoch}-{loss_str}{end}.pth'
-    save_path = os.path.join(model_path, model_name)
+    save_path = os.path.join(model_dir, model_name)
     
     torch.save(model.state_dict(), save_path)
     print(f'模型已保存至: {save_path}')
@@ -93,8 +94,9 @@ def plot_history(train_losses, val_losses, train_accs, val_accs, timestamp):
     plt.title('Accuracy Curves')
     
     plt.tight_layout()
-    os.makedirs('model_output', exist_ok=True)
-    plt.savefig(f'model_output/ViT16_224-{timestamp}.png')
+    model_dir = os.path.join('model_output', 'Model_Compare', 'ViT16_224')
+    os.makedirs(model_dir, exist_ok=True)
+    plt.savefig(os.path.join(model_dir, f'ViT16_224-{timestamp}.png'))
     # plt.show()
 
 class FocalLoss(nn.Module):
@@ -570,15 +572,18 @@ def train_cnn_vit_meta(data_lists, num_epochs, batch_size, learning_rate, resume
     
     
     # 保存报告
-    report_path = os.path.join('report', f'ViT16_224_report-{timestamp}.txt')
+    report_dir = os.path.join('report', 'Model_Compare', 'ViT16_224')
+    os.makedirs(report_dir, exist_ok=True)
+    report_path = os.path.join(report_dir, f'ViT16_224_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
+    print("报告已保存:", report_path)
     return best_model, best_val_loss
 
 
 def select_model():
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = os.path.join('model_output', 'Model_Compare', 'ViT16_224')
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         return None
