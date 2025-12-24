@@ -662,29 +662,38 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
 def select_model(beta_str):
     """选择要使用的模型文件"""
     model_dir = os.path.join('model_output', 'MoreBeta', beta_str)
+    
+    # 检查目录是否存在
     if not os.path.exists(model_dir):
-        print(f"错误: 模型目录 {model_dir} 不存在!")
+        print(f"提示: 模型目录 {model_dir} 不存在!")
+        print("0. 从头开始训练")
+        choice = int(input("请选择 (输入0从头训练): "))
         return None
     
+    # 检查是否有模型文件
     model_files = sorted([f for f in os.listdir(model_dir) if f.endswith('.pth') and f.startswith('ResViTM')])
     if not model_files:
-        print(f"错误: 在 {model_dir} 中没有找到模型文件!")
+        print(f"提示: 在 {model_dir} 中没有找到模型文件!")
+        print("0. 从头开始训练")
+        choice = int(input("请选择 (输入0从头训练): "))
         return None
     
+    # 有模型文件，显示选择列表
     print("找到以下模型文件:")
     model_files.sort()
     for i, model_file in enumerate(model_files):
         print(f"{i+1}. {model_file}")
+    print("0. 从头开始训练")
     
     while True:
         try:
-            choice = int(input("请选择要使用的模型 (输入序号): "))
+            choice = int(input("请选择要使用的模型 (输入序号，输入0从头训练): "))
             if 1 <= choice <= len(model_files):
                 return os.path.join(model_dir, model_files[choice-1])
             elif choice == 0:
                 return None
             else:
-                print(f"请输入1到{len(model_files)}之间的数字")
+                print(f"请输入0到{len(model_files)}之间的数字")
         except ValueError:
             print("请输入有效的数字")
 
