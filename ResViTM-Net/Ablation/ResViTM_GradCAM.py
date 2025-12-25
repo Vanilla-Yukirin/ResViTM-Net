@@ -92,11 +92,11 @@ class PartialPretrainedCNN(nn.Module):
         out = self.final_conv(out)
         return out
 
-class ResViTM_SmoothL1Loss(nn.Module):
+class ResViTM(nn.Module):
     def __init__(self, img_size=1024, patch_size=16, in_channels=1, num_classes=2,
                  embed_dim=768, depth=12, num_heads=12, mlp_ratio=4.0, dropout=0.1):
         """
-        ResViTM_SmoothL1Loss模型，增加了元数据处理功能
+        ResViTM模型
         Args:
             img_size: 输入图像大小
             patch_size: 分块大小
@@ -919,7 +919,7 @@ def main():
         data_lists = read_data_meta.main()
         
         # 训练模型
-        best_model, best_val_loss = train_ResViTM_SmoothL1Loss(
+        best_model, best_val_loss = train_ResViTM(
             data_lists=data_lists,
             num_epochs=40,
             batch_size=4,
@@ -942,7 +942,7 @@ def main():
         print(f"加载模型: {model_path}")
         
         # 初始化模型
-        model = ResViTM_SmoothL1Loss(
+        model = ResViTM(
             img_size=1024,
             patch_size=16,
             in_channels=1,
