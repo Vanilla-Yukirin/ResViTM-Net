@@ -440,7 +440,7 @@ def train_woViT(data_lists, num_epochs, batch_size, learning_rate, resume_traini
     criterion = nn.MSELoss()
 
     # SmoothL1Loss
-    beta_value = 0.6
+    beta_value = 0.5
     print(f"使用 SmoothL1Loss, beta (分段值) = {beta_value}")
     report+=f"使用 SmoothL1Loss, beta (分段值) = {beta_value}\n"
     criterion = nn.SmoothL1Loss(beta=beta_value)
