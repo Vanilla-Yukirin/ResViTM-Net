@@ -832,11 +832,15 @@ def select_model():
     model_dir = 'model_output'
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
+        print("0. 从头开始训练")
+        choice = int(input("请选择 (输入0从头训练): "))
         return None
     
     model_files = sorted([f for f in os.listdir(model_dir) if f.endswith('.pth') and f.startswith('woViT')])
     if not model_files:
         print(f"错误: 在 {model_dir} 中没有找到模型文件!")
+        print("0. 从头开始训练")
+        choice = int(input("请选择 (输入0从头训练): "))
         return None
     
     print("找到以下模型文件:")
