@@ -256,7 +256,7 @@ def train_cnn_vit_meta(data_lists, num_epochs, batch_size, learning_rate, resume
     # criterion = FocalLoss(gamma=2, device=device)
 
     # SmoothL1Loss
-    beta_value = 0.6
+    beta_value = 0.5
     print(f"使用 SmoothL1Loss, beta (分段值) = {beta_value}")
     report+=f"使用 SmoothL1Loss, beta (分段值) = {beta_value}\n"
     criterion = nn.SmoothL1Loss(beta=beta_value)

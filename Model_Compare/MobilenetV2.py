@@ -510,7 +510,7 @@ def train_cnn_vit_meta(data_lists, num_epochs, batch_size, learning_rate, resume
                 meta_batch[j, 3] = d.get("age1", 0)
                 meta_batch[j, 4] = d.get("age2", 0)
             meta_batch = meta_batch.to(device)
-            Y_batch = torch.tensor([d["positive"] for d in batch_data]).to(device)
+            Y_batch = torch.tensor([d["positive"] for d in batch_data], dtype=torch.float32).to(device)
             
             # 前向传播
             optimizer.zero_grad()
@@ -587,7 +587,7 @@ def train_cnn_vit_meta(data_lists, num_epochs, batch_size, learning_rate, resume
                     meta_batch[j, 3] = d.get("age1", 0)
                     meta_batch[j, 4] = d.get("age2", 0)
                 meta_batch = meta_batch.to(device)
-                Y_batch = torch.tensor([d["positive"] for d in batch_data]).to(device)
+                Y_batch = torch.tensor([d["positive"] for d in batch_data], dtype=torch.float32).to(device)
                 
                 # 前向传播
                 # outputs = model(X_batch,meta_batch)
