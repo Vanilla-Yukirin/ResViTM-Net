@@ -246,7 +246,7 @@ class woViT(nn.Module):
         return torch.sigmoid(x)
 
 
-def save_model(model, loss, timestamp, epoch, model_path='model_output', end=""):
+def save_model(model, loss, timestamp, epoch, model_path=os.path.join('model_output', 'Ablation', 'woViT'), end=""):
     """保存模型"""
     os.makedirs(model_path, exist_ok=True)
     loss_str = f"{loss:.4f}"
@@ -281,8 +281,9 @@ def plot_history(train_losses, val_losses, train_accs, val_accs, timestamp):
     plt.title('Accuracy Curves')
     
     plt.tight_layout()
-    os.makedirs('model_output', exist_ok=True)
-    plt.savefig(f'model_output/woViT-{timestamp}.png')
+    save_dir = os.path.join('model_output', 'Ablation', 'woViT')
+    os.makedirs(save_dir, exist_ok=True)
+    plt.savefig(os.path.join(save_dir, f'woViT-{timestamp}.png'))
     # plt.show()
 
 class FocalLoss(nn.Module):
@@ -821,15 +822,18 @@ def train_woViT(data_lists, num_epochs, batch_size, learning_rate, resume_traini
     '''
     
     # 保存报告
-    report_path = os.path.join('report', f'woViT_report-{timestamp}.txt')
+    report_dir = os.path.join('report', 'Ablation', 'woViT')
+    os.makedirs(report_dir, exist_ok=True)
+    report_path = os.path.join(report_dir, f'woViT_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
+    print(f"报告已保存: {report_path}")
     return best_model, best_val_loss
 
 
 def select_model():
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = os.path.join('model_output', 'Ablation', 'woViT')
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         print("0. 从头开始训练")

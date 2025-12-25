@@ -810,6 +810,7 @@ def train_woMeta(data_lists, num_epochs, batch_size, learning_rate, resume_train
     report_path = os.path.join('report', f'woMeta_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
+    print(f"训练报告已保存至: {report_path}")
     return best_model, best_val_loss
 
 

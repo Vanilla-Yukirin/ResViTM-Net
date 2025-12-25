@@ -859,6 +859,7 @@ def train_half(data_lists, num_epochs, batch_size, learning_rate, resume_trainin
     report_path = os.path.join('report', f'half_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
+    print(f"训练报告已保存至: {report_path}")
     return best_model, best_val_loss
 
 
@@ -896,7 +897,7 @@ def select_model():
             print("请输入有效的数字")
 
 
-def generate_gradcam(model, img, meta, target_class=1, save_path="GradCAM_output/half/sample0.png"):
+def generate_gradcam(model, img, meta, target_class=1, save_path=os.path.join("GradCAM_output", "Ablation", "half", "sample0.png")):
     """
     生成GradCAM热力图 - half模型版本
     Args:
@@ -1071,7 +1072,7 @@ def main():
         
         # 创建输出目录
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_dir = f"GradCAM_output/half_{timestamp}"
+        output_dir = os.path.join('GradCAM_output', 'Ablation', 'half', f"half_{timestamp}")
         os.makedirs(output_dir, exist_ok=True)
         
         cnt = 0

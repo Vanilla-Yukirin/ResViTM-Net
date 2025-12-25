@@ -1,9 +1,9 @@
 '''
-本代码将测试CViTM181116_SmoothL1Loss模型。输入是1024*1024的图片，输出是0或1，0表示正常，1表示异常。
-使用read_data_meta.py中的main函数读取数据集，并使用CViTM181116_SmoothL1Loss模型进行训练。
+本代码将测试ResViTM_SmoothL1Loss模型。输入是1024*1024的图片，输出是0或1，0表示正常，1表示异常。
+使用read_data_meta.py中的main函数读取数据集，并使用ResViTM_SmoothL1Loss模型进行训练。
 模型保存在model_output文件夹下
 文件名形如
-CViTM181116_SmoothL1Loss-20250409010540-{loss:.4f}.pth
+ResViTM_SmoothL1Loss-20250409010540-{loss:.4f}.pth
 
 使用元数据
 '''
@@ -92,11 +92,11 @@ class PartialPretrainedCNN(nn.Module):
         out = self.final_conv(out)
         return out
 
-class CViTM181116_SmoothL1Loss(nn.Module):
+class ResViTM_SmoothL1Loss(nn.Module):
     def __init__(self, img_size=1024, patch_size=16, in_channels=1, num_classes=2,
                  embed_dim=768, depth=12, num_heads=12, mlp_ratio=4.0, dropout=0.1):
         """
-        CViTM181116_SmoothL1Loss模型，增加了元数据处理功能
+        ResViTM_SmoothL1Loss模型，增加了元数据处理功能
         Args:
             img_size: 输入图像大小
             patch_size: 分块大小
@@ -110,12 +110,11 @@ class CViTM181116_SmoothL1Loss(nn.Module):
         """
         super().__init__()
         
-        # 1. 实例化我们新的、基于ResNet18的CNN部分
+        # 1. 实例化基于ResNet18的CNN部分
         self.cnn = PartialPretrainedCNN()
         
         # 2. 计算下采样倍数
         # ResNet18到layer3为止，总共下采样了 2(stem_conv) * 2(stem_pool) * 2(layer2) * 2(layer3) = 16倍
-        # 这和我们之前的MiniResNet设计保持了一致！
         self.img_size_after_cnn = img_size // 16
         
         # Patch Embedding
@@ -136,7 +135,7 @@ class CViTM181116_SmoothL1Loss(nn.Module):
         
         self.pos_drop = nn.Dropout(dropout)
         
-        # 使用PyTorch内置的TransformerEncoder
+        # TransformerEncoder
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embed_dim,
             nhead=num_heads,
@@ -156,7 +155,7 @@ class CViTM181116_SmoothL1Loss(nn.Module):
             nn.Linear(embed_dim, embed_dim),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(embed_dim, 1)  # 输出单个节点的logit
+            nn.Linear(embed_dim, 1)
         )
         
         self.meta_net=nn.Sequential(
@@ -219,7 +218,7 @@ class CViTM181116_SmoothL1Loss(nn.Module):
         # 使用类别token的输出进行分类
         cls_features = x[:, 0]  # [B, embed_dim]
         
-        # 融合特征 (简单相加)
+        # 融合特征
         meta_features = self.meta_net(meta_data)  # [B, embed_dim]
         cls_features = cls_features + meta_features
         
@@ -231,11 +230,11 @@ class CViTM181116_SmoothL1Loss(nn.Module):
         return torch.sigmoid(x)
 
 
-def save_model(model, loss, timestamp, epoch, model_path='model_output', end=""):
+def save_model(model, loss, timestamp, epoch, model_path=os.path.join('model_output', 'Ablation', 'ResViTM'), end=""):
     """保存模型"""
     os.makedirs(model_path, exist_ok=True)
     loss_str = f"{loss:.4f}"
-    model_name = f'CViTM181116_SmoothL1Loss-{timestamp}-{epoch}-{loss_str}{end}.pth'
+    model_name = f'ResViTM_SmoothL1Loss-{timestamp}-{epoch}-{loss_str}{end}.pth'
     save_path = os.path.join(model_path, model_name)
     
     torch.save(model.state_dict(), save_path)
@@ -266,36 +265,16 @@ def plot_history(train_losses, val_losses, train_accs, val_accs, timestamp):
     plt.title('Accuracy Curves')
     
     plt.tight_layout()
-    os.makedirs('model_output', exist_ok=True)
-    plt.savefig(f'model_output/CViTM181116_SmoothL1Loss-{timestamp}.png')
+    save_dir = os.path.join('model_output', 'Ablation', 'ResViTM')
+    os.makedirs(save_dir, exist_ok=True)
+    plt.savefig(os.path.join(save_dir, f'ResViTM_SmoothL1Loss-{timestamp}.png'))
     # plt.show()
 
-class FocalLoss(nn.Module):
-    def __init__(self, gamma=2, device='cuda'):
-        super().__init__()
-        # 计算正负样本比例
-        neg_count = 3126  # 根据您之前提供的数据
-        pos_count = 873
-        
-        # 设置alpha权重
-        pos_weight = min(neg_count/pos_count, 2.0)  # 限制最大权重为2
-        self.alpha = torch.tensor([1.0, pos_weight]).to(device)
-        
-        # gamma值控制难样本的关注度
-        self.gamma = gamma
-        
-    def forward(self, inputs, targets):
-        ce_loss = F.cross_entropy(inputs, targets, reduction='none')
-        pt = torch.exp(-ce_loss)
-        focal_loss = self.alpha[targets] * (1-pt)**self.gamma * ce_loss
-        return focal_loss.mean()
 
 
-
-
-def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_rate, resume_training, model_path):
+def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_training, model_path):
     report=""
-    """训练CViTM181116_SmoothL1Loss模型"""
+    """训练ResViTM模型"""
     # 合并数据列表
     all_data = []
     for data_list in data_lists:
@@ -346,7 +325,7 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
 
 
     # 初始化模型
-    model = CViTM181116_SmoothL1Loss(
+    model = ResViTM(
         img_size=1024,
         patch_size=16, # best is 16
         in_channels=1,  # 灰度图像
@@ -365,7 +344,7 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
         model.load_state_dict(torch.load(model_path))
         
         # 从文件名中提取epoch信息
-        # 格式: CViTM181116_SmoothL1Loss-timestamp-epoch-loss.pth
+        # 格式: ResViTM-timestamp-epoch-loss.pth
         try:
             filename = os.path.basename(model_path)
             parts = filename.split('-')
@@ -389,39 +368,6 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
 
 
     print(f"使用设备: {device}")
-    
-    # 定义损失函数和优化器
-
-    # CrossEntropyLoss
-    # criterion = nn.CrossEntropyLoss()
-
-    # 带权重的CrossEntropyLoss
-
-    # 计算训练集中正负样本数量
-    neg_count = sum(1 for d in augmented_train_data if d["positive"] == 0)
-    pos_count = sum(1 for d in augmented_train_data if d["positive"] == 1)
-    # 计算权重
-    neg_weight = 1.0
-    pos_weight = neg_count / pos_count  # 负样本数量除以正样本数量
-    # 设置损失函数
-    weights = torch.tensor([neg_weight, pos_weight]).to(device)
-    
-    print(f"Negative samples: {neg_count}")
-    print(f"Positive samples: {pos_count}")
-    print(f"Weight ratio: {pos_weight:.2f}")
-
-    criterion = nn.CrossEntropyLoss(weight=weights)
-
-    # FocalLoss
-    criterion = FocalLoss(gamma=2, device=device)
-
-    # BCELossWithLogitsLoss
-    pos_weight = torch.tensor([pos_weight], device=device)  # pos_weight已定义
-    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-
-    # MSELoss
-
-    criterion = nn.MSELoss()
 
     # SmoothL1Loss
     beta_value = 0.6
@@ -457,7 +403,7 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
         train_correct = 0
         train_total = 0
         
-        # 使用tqdm显示进度
+        # 显示进度
         train_pbar = tqdm(range(0, len(augmented_train_data), batch_size), desc=f'Epoch {epoch+1}/{num_epochs} [Train]')
         
         for i in train_pbar:
@@ -473,7 +419,6 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
                 meta_batch[j, 3] = d.get("age1", 0)
                 meta_batch[j, 4] = d.get("age2", 0)
             meta_batch = meta_batch.to(device)
-            # Y_batch = torch.tensor([d["positive"] for d in batch_data]).to(device)
             Y_batch = torch.tensor([d["positive"] for d in batch_data], dtype=torch.float32).to(device)
             
             # 前向传播
@@ -487,9 +432,7 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
             
             # 统计
             train_loss += loss.item() * len(batch_data)
-            # _, predicted = torch.max(outputs, 1) # for focal loss
-            # predicted = (outputs > 0).float() # for bce loss
-            predicted = (outputs > 0.5).float() # for mse loss
+            predicted = (outputs > 0.5).float() # for mae/mse/smoothl1 loss
             train_total += Y_batch.size(0)
             train_correct += (predicted == Y_batch).sum().item()
             
@@ -524,7 +467,7 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
                 }
 
         
-        # 使用tqdm显示进度
+        # 显示进度
         val_pbar = tqdm(range(0, len(val_data), batch_size), desc=f'Epoch {epoch+1}/{num_epochs} [Val]')
         
         with torch.no_grad():
@@ -541,7 +484,6 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
                     meta_batch[j, 3] = d.get("age1", 0)
                     meta_batch[j, 4] = d.get("age2", 0)
                 meta_batch = meta_batch.to(device)
-                # Y_batch = torch.tensor([d["positive"] for d in batch_data]).to(device)
                 Y_batch = torch.tensor([d["positive"] for d in batch_data], dtype=torch.float32).to(device)
                 
                 # 前向传播
@@ -550,8 +492,6 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
                 
                 # 统计
                 val_loss += loss.item() * len(batch_data)
-                # _, predicted = torch.max(outputs, 1)
-                # predicted = (outputs > 0).float()
                 predicted = (outputs > 0.5).float()
                 val_total += Y_batch.size(0)
                 val_correct += (predicted == Y_batch).sum().item()
@@ -806,22 +746,24 @@ def train_CViTM181116_SmoothL1Loss(data_lists, num_epochs, batch_size, learning_
     '''
     
     # 保存报告
-    report_path = os.path.join('report', f'CViTM181116_SmoothL1Loss_report-{timestamp}.txt')
+    report_path = os.path.join('report', 'Ablation', 'ResViTM', f'ResViTM_report-{timestamp}.txt')
+    os.makedirs(os.path.dirname(report_path), exist_ok=True)
     with open(report_path, 'w') as f:
         f.write(report)
+    print(f"训练报告已保存至: {report_path}")
     return best_model, best_val_loss
 
 
 def select_model():
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = os.path.join('model_output', 'ResViTM')
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         print("0. 从头开始训练")
         choice = int(input("请选择 (输入0从头训练): "))
         return None
     
-    model_files = sorted([f for f in os.listdir(model_dir) if f.endswith('.pth') and f.startswith('CViTM181116_SmoothL1Loss')])
+    model_files = sorted([f for f in os.listdir(model_dir) if f.endswith('.pth') and f.startswith('ResViTM')])
     if not model_files:
         print(f"错误: 在 {model_dir} 中没有找到模型文件!")
         print("0. 从头开始训练")
@@ -972,12 +914,12 @@ def main():
         model_path = select_model()
         if not model_path:
             resume_training = False
-        print("开始训练CViTM181116_SmoothL1Loss模型")
+        print("开始训练ResViTM_SmoothL1Loss模型")
         import utils.read_data_meta as read_data_meta
         data_lists = read_data_meta.main()
         
         # 训练模型
-        best_model, best_val_loss = train_CViTM181116_SmoothL1Loss(
+        best_model, best_val_loss = train_ResViTM_SmoothL1Loss(
             data_lists=data_lists,
             num_epochs=40,
             batch_size=4,
@@ -985,7 +927,7 @@ def main():
             resume_training=resume_training,
             model_path=model_path
         )
-        print("CViTM181116_SmoothL1Loss模型训练完成！")
+        print("ResViTM_SmoothL1Loss模型训练完成！")
         
     elif mode == 2:
         # GradCAM可视化模式
@@ -1000,7 +942,7 @@ def main():
         print(f"加载模型: {model_path}")
         
         # 初始化模型
-        model = CViTM181116_SmoothL1Loss(
+        model = ResViTM_SmoothL1Loss(
             img_size=1024,
             patch_size=16,
             in_channels=1,
@@ -1022,7 +964,7 @@ def main():
         
         # 创建输出目录
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_dir = f"GradCAM_output/FULL_{timestamp}"
+        output_dir = os.path.join('GradCAM_output', 'Ablation', 'ResViTM', f"FULL_{timestamp}")
         os.makedirs(output_dir, exist_ok=True)
         
         cnt = 0
