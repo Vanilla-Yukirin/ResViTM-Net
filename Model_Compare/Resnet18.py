@@ -46,7 +46,7 @@ class ResNet18(nn.Module):
         self.ResNet = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         
         # 替换最后的全连接层为二分类输出
-        # ResNet18的fc层输入维度是2048
+        # ResNet18的fc层输入维度是512
         num_ftrs = self.ResNet.fc.in_features
         self.ResNet.fc = nn.Sequential(
             nn.Linear(num_ftrs, 512),

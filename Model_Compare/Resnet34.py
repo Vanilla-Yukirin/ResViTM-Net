@@ -46,7 +46,7 @@ class ResNet34(nn.Module):
         self.ResNet = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1)
         
         # 替换最后的全连接层为二分类输出
-        # ResNet34的fc层输入维度是2048
+        # ResNet34的fc层输入维度是512
         num_ftrs = self.ResNet.fc.in_features
         self.ResNet.fc = nn.Sequential(
             nn.Linear(num_ftrs, 512),

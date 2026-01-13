@@ -144,8 +144,12 @@ def extract_features_for_tsne(model, val_data, n_samples=200, device='cuda', mod
     model.eval()
     model = model.to(device)  # 确保模型在正确的设备上
     
-    # 取前n个样本
-    selected_data = val_data[:n_samples]
+    # 取前n个样本（-1表示全选）
+    if n_samples == -1 or n_samples >= len(val_data):
+        selected_data = val_data
+        print(f"使用全部{len(val_data)}个样本。")
+    else:
+        selected_data = val_data[:n_samples]
     
     features_list = []
     labels_list = []
