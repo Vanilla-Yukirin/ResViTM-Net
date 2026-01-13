@@ -949,7 +949,7 @@ def generate_gradcam(model, img, meta, target_class=1, save_path=os.path.join("G
         cnn_out = activations['cnn_out']  # [1, 1, H/16, W/16]
         cnn_grad = activations['cnn_grad']  # [1, 1, H/16, W/16]
         
-        print(f"梯度值范围: {cnn_grad.min().item():.6f} - {cnn_grad.max().item():.6f}")
+        # print(f"梯度值范围: {cnn_grad.min().item():.6f} - {cnn_grad.max().item():.6f}")
         
         # 计算权重 (对空间维度求平均)
         weights = torch.mean(cnn_grad, dim=(2, 3), keepdim=True)  # [1, 1, 1, 1]
@@ -990,7 +990,7 @@ def generate_gradcam(model, img, meta, target_class=1, save_path=os.path.join("G
         # 保存单独的heatmap
         heatmap_path = f"{save_path}_heatmap.png"
         cv2.imwrite(heatmap_path, heatmap)
-        print(f"热力图已保存到: {heatmap_path}")
+        # print(f"热力图已保存到: {heatmap_path}")
         
         # 生成叠加图
         img_uint8 = np.uint8(img)
@@ -999,7 +999,7 @@ def generate_gradcam(model, img, meta, target_class=1, save_path=os.path.join("G
         
         overlay = cv2.addWeighted(img_uint8, 0.5, heatmap, 0.5, 0)
         cv2.imwrite(save_path, overlay)
-        print(f"叠加图已保存到: {save_path}")
+        # print(f"叠加图已保存到: {save_path}")
         
     finally:
         # 清理hook
@@ -1020,6 +1020,8 @@ def main():
         # 原有的训练代码
         resume_training = True
         model_path = select_model()
+        if model_path == None:
+            model_path = input("请输出需要GradCAM可视化的模型路径: ")
         if not model_path:
             resume_training = False
         print("开始训练half模型")
@@ -1043,9 +1045,8 @@ def main():
         
         # 选择并加载模型
         model_path = select_model()
-        if not model_path:
-            print("未选择模型，退出。")
-            return
+        if model_path == None:
+            model_path = input("请输出需要GradCAM可视化的模型路径: ")
             
         print(f"加载模型: {model_path}")
         
@@ -1072,30 +1073,35 @@ def main():
         
         # 创建输出目录
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_dir = os.path.join('GradCAM_output', 'Ablation', 'half', f"half_{timestamp}")
+        output_dir = os.path.join('GradCAM_output', f"half_{timestamp}")
         os.makedirs(output_dir, exist_ok=True)
         
+        # 计算总样本数
+        total_samples = sum(len(dataset) for dataset in data_lists)
+        
         cnt = 0
-        for choose_dataset_id, dataset in enumerate(data_lists):
-            for choose_data_id, sample in enumerate(dataset):
-                print(f"处理样本: {sample}")
-                
-                # 获取图像和元数据
-                img = sample["img"]
-                meta = [sample["gender0"], sample["gender1"], sample["age0"], sample["age1"], sample["age2"]]
-                
-                # 构建元数据字符串用于文件名
-                meta_str = "".join(str(m) for m in meta)
-                
-                # 构建保存路径
-                save_path = os.path.join(output_dir, 
-                    f"GradCAM_half_data{choose_dataset_id}_{choose_data_id}_{sample['file_name']}_meta{meta_str}_label{sample['positive']}.png")
-                
-                # 生成GradCAM
-                generate_gradcam(model, img, meta, target_class=1, save_path=save_path)
-                
-                cnt += 1
-                # 可以设置处理数量限制
+        with tqdm(total=total_samples, desc="GradCAM processing") as pbar:
+            for choose_dataset_id, dataset in enumerate(data_lists):
+                for choose_data_id, sample in enumerate(dataset):
+                    # print(f"处理样本: {sample}")
+                    
+                    # 获取图像和元数据
+                    img = sample["img"]
+                    meta = [sample["gender0"], sample["gender1"], sample["age0"], sample["age1"], sample["age2"]]
+                    
+                    # 构建元数据字符串用于文件名
+                    meta_str = "".join(str(m) for m in meta)
+                    
+                    # 构建保存路径
+                    save_path = os.path.join(output_dir, 
+                        f"GradCAM_half_data{choose_dataset_id}_{choose_data_id}_{sample['file_name']}_meta{meta_str}_label{sample['positive']}.png")
+                    
+                    # 生成GradCAM
+                    generate_gradcam(model, img, meta, target_class=1, save_path=save_path)
+                    
+                    cnt += 1
+                    pbar.update(1)
+                    # 可以设置处理数量限制
                 # if cnt >= 10:
                 #     break
         
