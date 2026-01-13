@@ -220,7 +220,7 @@ class ResViTM(nn.Module):
         # 使用类别token的输出进行分类
         cls_features = x[:, 0]  # [B, embed_dim]
         
-        # 融合特征 (简单相加)
+        # 融合特征
         meta_features = self.meta_net(meta_data)  # [B, embed_dim]
         cls_features = cls_features + meta_features
         
@@ -249,10 +249,11 @@ class ResViTM(nn.Module):
 
 def save_model(model, loss, timestamp, epoch, model_path='model_output', end=""):
     """保存模型"""
-    os.makedirs(model_path, exist_ok=True)
+    model_dir = os.path.join(model_path, 'ResViTM')
+    os.makedirs(model_dir, exist_ok=True)
     loss_str = f"{loss:.4f}"
     model_name = f'ResViTM-{timestamp}-{epoch}-{loss_str}{end}.pth'
-    save_path = os.path.join(model_path, model_name)
+    save_path = os.path.join(model_dir, model_name)
     
     torch.save(model.state_dict(), save_path)
     print(f'模型已保存至: {save_path}')
@@ -282,30 +283,10 @@ def plot_history(train_losses, val_losses, train_accs, val_accs, timestamp):
     plt.title('Accuracy Curves')
     
     plt.tight_layout()
-    os.makedirs('model_output', exist_ok=True)
-    plt.savefig(f'model_output/ResViTM-{timestamp}.png')
+    model_dir = os.path.join('model_output', 'ResViTM')
+    os.makedirs(model_dir, exist_ok=True)
+    plt.savefig(os.path.join(model_dir, f'ResViTM-{timestamp}.png'))
     # plt.show()
-
-class FocalLoss(nn.Module):
-    def __init__(self, gamma=2, device='cuda'):
-        super().__init__()
-        # 计算正负样本比例
-        neg_count = 3126  # 根据您之前提供的数据
-        pos_count = 873
-        
-        # 设置alpha权重
-        pos_weight = min(neg_count/pos_count, 2.0)  # 限制最大权重为2
-        self.alpha = torch.tensor([1.0, pos_weight]).to(device)
-        
-        # gamma值控制难样本的关注度
-        self.gamma = gamma
-        
-    def forward(self, inputs, targets):
-        ce_loss = F.cross_entropy(inputs, targets, reduction='none')
-        pt = torch.exp(-ce_loss)
-        focal_loss = self.alpha[targets] * (1-pt)**self.gamma * ce_loss
-        return focal_loss.mean()
-
 
 
 
@@ -405,39 +386,6 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
 
 
     print(f"使用设备: {device}")
-    
-    # 定义损失函数和优化器
-
-    # CrossEntropyLoss
-    # criterion = nn.CrossEntropyLoss()
-
-    # 带权重的CrossEntropyLoss
-
-    # 计算训练集中正负样本数量
-    neg_count = sum(1 for d in augmented_train_data if d["positive"] == 0)
-    pos_count = sum(1 for d in augmented_train_data if d["positive"] == 1)
-    # 计算权重
-    neg_weight = 1.0
-    pos_weight = neg_count / pos_count  # 负样本数量除以正样本数量
-    # 设置损失函数
-    weights = torch.tensor([neg_weight, pos_weight]).to(device)
-    
-    print(f"Negative samples: {neg_count}")
-    print(f"Positive samples: {pos_count}")
-    print(f"Weight ratio: {pos_weight:.2f}")
-
-    criterion = nn.CrossEntropyLoss(weight=weights)
-
-    # FocalLoss
-    criterion = FocalLoss(gamma=2, device=device)
-
-    # BCELossWithLogitsLoss
-    pos_weight = torch.tensor([pos_weight], device=device)  # pos_weight已定义
-    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-
-    # MSELoss
-
-    criterion = nn.MSELoss()
 
     # SmoothL1Loss
     beta_value = 0.5
@@ -473,7 +421,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         train_correct = 0
         train_total = 0
         
-        # 使用tqdm显示进度
+        # 显示进度
         train_pbar = tqdm(range(0, len(augmented_train_data), batch_size), desc=f'Epoch {epoch+1}/{num_epochs} [Train]')
         
         for i in train_pbar:
@@ -489,7 +437,6 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
                 meta_batch[j, 3] = d.get("age1", 0)
                 meta_batch[j, 4] = d.get("age2", 0)
             meta_batch = meta_batch.to(device)
-            # Y_batch = torch.tensor([d["positive"] for d in batch_data]).to(device)
             Y_batch = torch.tensor([d["positive"] for d in batch_data], dtype=torch.float32).to(device)
             
             # 前向传播
@@ -503,9 +450,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
             
             # 统计
             train_loss += loss.item() * len(batch_data)
-            # _, predicted = torch.max(outputs, 1) # for focal loss
-            # predicted = (outputs > 0).float() # for bce loss
-            predicted = (outputs > 0.5).float() # for mse loss
+            predicted = (outputs > 0.5).float() # for mae/mse/smoothl1 loss
             train_total += Y_batch.size(0)
             train_correct += (predicted == Y_batch).sum().item()
             
@@ -540,7 +485,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
                 }
 
         
-        # 使用tqdm显示进度
+        # 显示进度
         val_pbar = tqdm(range(0, len(val_data), batch_size), desc=f'Epoch {epoch+1}/{num_epochs} [Val]')
         
         with torch.no_grad():
@@ -557,7 +502,6 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
                     meta_batch[j, 3] = d.get("age1", 0)
                     meta_batch[j, 4] = d.get("age2", 0)
                 meta_batch = meta_batch.to(device)
-                # Y_batch = torch.tensor([d["positive"] for d in batch_data]).to(device)
                 Y_batch = torch.tensor([d["positive"] for d in batch_data], dtype=torch.float32).to(device)
                 
                 # 前向传播
@@ -566,8 +510,6 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
                 
                 # 统计
                 val_loss += loss.item() * len(batch_data)
-                # _, predicted = torch.max(outputs, 1)
-                # predicted = (outputs > 0).float()
                 predicted = (outputs > 0.5).float()
                 val_total += Y_batch.size(0)
                 val_correct += (predicted == Y_batch).sum().item()
@@ -713,23 +655,25 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     
     # 绘制训练历史
     
-
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    plot_history(train_losses, val_losses, train_accs, val_accs, timestamp)
+    # plot_history(train_losses, val_losses, train_accs, val_accs, timestamp)
     
     # 保存最佳模型
-    if best_model is not None:
+    # if best_model is not None:
         
-        best_model_path = save_model(best_model,best_val_loss, timestamp, best_epoch_id, end="-best")
-        print(f"最佳模型已保存: {best_model_path}, Val Loss: {best_val_loss:.4f}")
-        report += f"最佳模型已保存: {best_model_path}, Val Loss: {best_val_loss:.4f}\n"
+    #     best_model_path = save_model(best_model,best_val_loss, timestamp, best_epoch_id, end="-best")
+    #     print(f"最佳模型已保存: {best_model_path}, Val Loss: {best_val_loss:.4f}")
+    #     report += f"最佳模型已保存: {best_model_path}, Val Loss: {best_val_loss:.4f}\n"
     
     
     
     # 保存报告
-    report_path = os.path.join('report', f'ResViTM_report-{timestamp}.txt')
-    with open(report_path, 'w') as f:
-        f.write(report)
+    # report_dir = os.path.join('report', 'ResViTM')
+    # os.makedirs(report_dir, exist_ok=True)
+    # report_path = os.path.join(report_dir, f'ResViTM_report-{timestamp}.txt')
+    # with open(report_path, 'w') as f:
+    #     f.write(report)
+    # print(f"训练报告已保存: {report_path}")
     
     # 生成t-SNE可视化
     print("\nGenerating t-SNE feature visualization...")
@@ -738,7 +682,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         # 提取特征
-        n_samples = 200
+        n_samples = -1
         features, labels = extract_features_for_tsne(
             model=best_model,
             val_data=val_data,
@@ -765,7 +709,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
 
 def select_model():
     """选择要使用的模型文件"""
-    model_dir = 'model_output'
+    model_dir = os.path.join('model_output', 'ResViTM')
     if not os.path.exists(model_dir):
         print(f"错误: 模型目录 {model_dir} 不存在!")
         print("0. 从头开始训练")
@@ -801,6 +745,8 @@ def main():
     resume_training = True
     # 选择并加载模型
     model_path = select_model()
+    if model_path == None:
+        model_path = input("请输出需要T-SNE可视化的模型路径: ")
     if not model_path:
         resume_training = False
     print("开始训练ResViTM模型")
