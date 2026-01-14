@@ -670,7 +670,7 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     # 保存报告
     report_dir = os.path.join('report', 'ResViTM')
     os.makedirs(report_dir, exist_ok=True)
-    report_path = os.path.join(report_dir, f'ResViTM_report-{timestamp}.txt')
+    report_path = os.path.join(report_dir, 'Augmentation_analysis' ,f'{augmentation_strategy}_ResViTM_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
     print("报告已保存:", report_path)
