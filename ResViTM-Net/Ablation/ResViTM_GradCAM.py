@@ -962,7 +962,7 @@ def main():
         
         # 创建输出目录
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_dir = os.path.join('GradCAM_output', 'Ablation', 'ResViTM', f"FULL_{timestamp}")
+        output_dir = os.path.join('GradCAM_output', f"FULL_{timestamp}")
         os.makedirs(output_dir, exist_ok=True)
         
         # 计算总样本数
