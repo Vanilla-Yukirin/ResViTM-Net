@@ -94,6 +94,28 @@ def main():
         for result in results:
             f.write(f"{result['file_name']}	{result['gender']}	{result['age']}\n")
     
+    # 统计分布：性别(0女/1男) × 年龄段(0<=18,1:18~30,2:>30)
+    stats = {
+        (0, 0): 0,  # female, <18
+        (1, 0): 0,  # male,   <18
+        (0, 1): 0,  # female, 18~30
+        (1, 1): 0,  # male,   18~30
+        (0, 2): 0,  # female, >30
+        (1, 2): 0,  # male,   >30
+    }
+    for r in results:
+        key = (r['gender'], r['age'])
+        if key in stats:
+            stats[key] += 1
+
+    print("统计信息（gender 0女/1男, age 0:<18, 1:18~30, 2:>30）:")
+    print(f"female,<18 : {stats[(0, 0)]}")
+    print(f"male,<18   : {stats[(1, 0)]}")
+    print(f"female,18~30: {stats[(0, 1)]}")
+    print(f"male,18~30  : {stats[(1, 1)]}")
+    print(f"female,>30  : {stats[(0, 2)]}")
+    print(f"male,>30    : {stats[(1, 2)]}")
+
     print(f"推理完成，结果已保存至: {result_file}")
     print(f"共处理了 {len(results)} 个样本")
 
