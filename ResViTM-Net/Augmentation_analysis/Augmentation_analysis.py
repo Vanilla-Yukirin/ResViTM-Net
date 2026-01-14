@@ -233,7 +233,7 @@ class ResViTM(nn.Module):
 
 def save_model(model, loss, timestamp, epoch, model_path='model_output', end=""):
     """保存模型"""
-    model_dir = os.path.join(model_path, 'ResViTM')
+    model_dir = os.path.join(model_path, 'Augmentation_analysis', 'ResViTM')
     os.makedirs(model_dir, exist_ok=True)
     loss_str = f"{loss:.4f}"
     model_name = f'ResViTM-{timestamp}-{epoch}-{loss_str}{end}.pth'
@@ -267,7 +267,7 @@ def plot_history(train_losses, val_losses, train_accs, val_accs, timestamp):
     plt.title('Accuracy Curves')
     
     plt.tight_layout()
-    model_dir = os.path.join('model_output', 'ResViTM')
+    model_dir = os.path.join('model_output', 'Augmentation_analysis', 'ResViTM')
     os.makedirs(model_dir, exist_ok=True)
     plt.savefig(os.path.join(model_dir, f'ResViTM-{timestamp}.png'))
     # plt.show()
@@ -668,9 +668,9 @@ def train_ResViTM(data_lists, num_epochs, batch_size, learning_rate, resume_trai
     
     
     # 保存报告
-    report_dir = os.path.join('report', 'ResViTM')
+    report_dir = os.path.join('report', 'Augmentation_analysis', 'ResViTM')
     os.makedirs(report_dir, exist_ok=True)
-    report_path = os.path.join(report_dir, 'Augmentation_analysis' ,f'{augmentation_strategy}_ResViTM_report-{timestamp}.txt')
+    report_path = os.path.join(report_dir, f'{augmentation_strategy}_ResViTM_report-{timestamp}.txt')
     with open(report_path, 'w') as f:
         f.write(report)
     print("报告已保存:", report_path)
