@@ -179,10 +179,10 @@ def plot_roc_curve(predictions, labels, output_dir='ROC-output'):
     
     # 设置字体
     plt.rcParams['font.family'] = 'Times New Roman'
-    plt.rcParams['font.size'] = 14
+    plt.rcParams['font.size'] = 16
     
-    # 绘制ROC曲线
-    fig, ax = plt.subplots(figsize=(12, 10))
+    # 绘制ROC曲线（调整为更小的正方形图）
+    fig, ax = plt.subplots(figsize=(10, 10))
     
     # 绘制ROC曲线
     ax.plot(fpr, tpr, color='darkorange', lw=3, label=f'ROC curve (AUC = {roc_auc:.4f})')
@@ -193,19 +193,22 @@ def plot_roc_curve(predictions, labels, output_dir='ROC-output'):
     ax.set_xlim([0.0, 1.0])
     ax.set_ylim([0.0, 1.0])
     
+    # 设置绘图区域为正方形（xy轴间距相等）
+    ax.set_aspect('equal', adjustable='box')
+    
     # 设置标签和标题，增加字号
-    ax.set_xlabel('False Positive Rate', fontsize=16, fontweight='bold')
-    ax.set_ylabel('True Positive Rate', fontsize=16, fontweight='bold')
-    ax.set_title('ROC Curve - ResViTM Model', fontsize=18, fontweight='bold', pad=20)
+    ax.set_xlabel('False Positive Rate', fontsize=20, fontweight='bold')
+    ax.set_ylabel('True Positive Rate', fontsize=20, fontweight='bold')
+    ax.set_title('ROC Curve - ResViTM Model', fontsize=22, fontweight='bold', pad=20)
     
     # 增强图例
-    ax.legend(loc="lower right", fontsize=14, framealpha=0.95, edgecolor='black')
+    ax.legend(loc="lower right", fontsize=16, framealpha=0.95, edgecolor='black')
     
     # 增强网格
     ax.grid(True, alpha=0.4, linestyle='-', linewidth=0.8)
     
     # 调整刻度标签字体大小
-    ax.tick_params(axis='both', which='major', labelsize=13)
+    ax.tick_params(axis='both', which='major', labelsize=16)
     
     # 设置脊线宽度
     for spine in ax.spines.values():
@@ -213,12 +216,12 @@ def plot_roc_curve(predictions, labels, output_dir='ROC-output'):
     
     plt.tight_layout()
     
-    # 保存ROC曲线
+    # 保存ROC曲线（PDF矢量图格式）
     from datetime import datetime
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    output_path = os.path.join(output_dir, f'ROC_ResViTM_{timestamp}.png')
-    plt.savefig(output_path, dpi=600, bbox_inches='tight')
-    print(f"ROC曲线已保存至: {output_path}")
+    output_path = os.path.join(output_dir, f'ROC_ResViTM_{timestamp}.pdf')
+    plt.savefig(output_path, format='pdf', bbox_inches='tight')
+    print(f"ROC曲线（PDF矢量图）已保存至: {output_path}")
     plt.close()
     
     # 保存详细的ROC指标信息
