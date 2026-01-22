@@ -80,7 +80,23 @@ python ResViTM-Net/train_ResViTM.py
 
 训练报告会输出并以文本文件的形式保存在report目录下；模型权重文件与Loss/Acc曲线会保存在model_output目录下。如下是Loss/Acc曲线的示例：
 
-![](model_output/ResViTM-20250804021325.png)
+![](model_output/loss_acc_curves.png)
+
+### 绘制ROC曲线
+
+为已训练好的ResViTM模型生成并保存ROC曲线（PDF）：
+
+```bash
+python ResViTM-Net/ROC/ROC.py
+```
+
+### 数据增强策略实验
+
+运行数据增强策略实验，生成对应的模型与报告：
+
+```bash
+python ResViTM-Net/Augmentation_analysis/Augmentation_analysis.py
+```
 
 ### 调整Loss函数
 

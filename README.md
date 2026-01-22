@@ -82,7 +82,23 @@ python ResViTM-Net/train_ResViTM.py
 
 The training report will be saved as a text file in the `report` directory. Model weights and Loss/Accuracy curves will be saved in the `model_output` directory. An image of the output curve:
 
-![](model_output/ResViTM-20250804021325.png)
+![](model_output/loss_acc_curves.png)
+
+### ROC Curve Plotting
+
+Generate and save the ROC curve (PDF) for a trained ResViTM model:
+
+```bash
+python ResViTM-Net/ROC/ROC.py
+```
+
+### Augmentation Strategy Analysis
+
+Run data augmentation strategy experiments and save the trained models and reports:
+
+```bash
+python ResViTM-Net/Augmentation_analysis/Augmentation_analysis.py
+```
 
 ### Adjusting the Loss Function
 
