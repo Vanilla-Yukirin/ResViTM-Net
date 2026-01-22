@@ -90,6 +90,10 @@ python ResViTM-Net/train_ResViTM.py
 python ResViTM-Net/ROC/ROC.py
 ```
 
+示例输出：
+
+![](ROC-output/ROC_ResViTM_20260114093407.png)
+
 ### 数据增强策略实验
 
 运行数据增强策略实验，生成对应的模型与报告：

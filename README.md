@@ -92,6 +92,10 @@ Generate and save the ROC curve (PDF) for a trained ResViTM model:
 python ResViTM-Net/ROC/ROC.py
 ```
 
+Sample output:
+
+![](ROC-output/ROC_ResViTM_20260114093407.png)
+
 ### Augmentation Strategy Analysis
 
 Run data augmentation strategy experiments and save the trained models and reports:
